@@ -5,6 +5,7 @@ from django.contrib.auth.models import BaseUserManager,AbstractBaseUser
 
 # Create your models here.
 
+
 class ProfileModel(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.ImageField(default='default.jpg', upload_to='profile', validators=[
@@ -66,21 +67,12 @@ class User(AbstractBaseUser):
       return self.is_admin
 
   def has_module_perms(self, app_label):
-      "Does the user have permissions to view the app `app_label`?"
-      # Simplest possible answer: Yes, always
+
       return True
 
   @property
   def is_staff(self):
-      "Is the user a member of staff?"
-      # Simplest possible answer: All admins are staff
+
       return self.is_admin
 
 
-class ProfileModel(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(default='default.jpg', upload_to='profile', validators=[
-                              FileExtensionValidator(['png', 'jpg'])])
-
-    def __str__(self):
-        return self.user.username

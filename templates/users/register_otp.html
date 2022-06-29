@@ -1,0 +1,71 @@
+{% extends 'partials/base.html' %}
+{% block title %}Sign Up{% endblock %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="cover">
+    <div class="container ">
+        <div class="row mt-5 pt-3">
+            <div class="col-md-5 offset-md-6">
+                <div class="card my-3 shadow">
+                    <div class="card-body">
+                        <h4>Sign Up Page</h4>
+                        <hr>
+                        <form method="POST" >
+                            <div id="email_div" style="display: block;" >
+
+    <label for="email">Email</label>
+    <input type="text" name="email" id="email">
+    <button  onclick="ajax_send_otp()">Send OTP</button>
+</div>
+<div id="verify_text_div"></div>
+<div id="otp_div" style="display: none;" >
+
+    <label for="email">OTP</label>
+    <input type="text" name="otp" id="otp">
+    <button  onclick="verify_otp()">Verify</button>
+</div>
+
+
+                            <input class="btn btn-primary btn-block" type="submit" value="Sign Up">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+<script>
+     var otp_from_back="";
+     function ajax_send_otp(){
+        document.getElementById("email_div").style.display='none';
+        email = document.getElementById("email");
+      $.post("/send_otp",
+          {
+              "email":email.value,
+              "csrfmiddlewaretoken":"{{csrf_token}}"
+          },
+          function(data, status){
+              if(status=="success"){
+                  otp_from_back = data;
+                  document.getElementById("otp_div").style.display='block';
+                  }
+     }
+     );
+     }
+    function verify_otp(){
+        var user_otp=document.getElementById("otp").value;
+        if (user_otp==otp_from_back){
+            document.getElementById("verify_text_div").style.color="green";
+            document.getElementById("verify_text_div").innerHTML="OTP Verified";
+            document.getElementById("otp_div").style.display="none";
+            document.getElementById("form_div").style.display="block";
+        }
+        else{
+            document.getElementById("verify_text_div").style.color="red";
+            document.getElementById("verify_text_div").innerHTML="Try Again!!";
+        }
+    }
+ </script>

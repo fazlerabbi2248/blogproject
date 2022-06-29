@@ -1,12 +1,12 @@
 from django.urls import path
 from .import views
 from django.contrib.auth import views as auth_view
-from users.views import UserRegistrationView
+from users.views import UserRegistrationView,UserLoginView,UserProfileView
 
 urlpatterns = [
     path('sign_up/', views.sign_up, name='users-sign-up'),
     path('profile/', views.profile, name='users-profile'),
-    path('login/', auth_view.LoginView.as_view(template_name='users/login.html'),
+    path('', auth_view.LoginView.as_view(template_name='users/login.html'),
          name='users-login'),
     path('logout/', auth_view.LogoutView.as_view(template_name='users/logout.html'),
          name='users-logout'),
@@ -18,5 +18,8 @@ urlpatterns = [
          name='password_reset_confirm'),
     path('password_reset_complete/', auth_view.PasswordResetCompleteView.as_view(template_name='users/password_reset_complete.html'),
          name='password_reset_complete'),
-    path('register/',UserRegistrationView.as_view(),name='registerApi')
+    path('register/',UserRegistrationView.as_view(),name='registerApi'),
+    path('loginapi/',UserLoginView.as_view(),name='loginApi'),
+    path('profileapi/',UserProfileView.as_view(),name='profileApi'),
+
 ]
