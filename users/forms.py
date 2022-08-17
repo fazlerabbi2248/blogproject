@@ -2,7 +2,6 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import ProfileModel
 from django import forms
-from users.models import User
 
 
 class SignUpForm(UserCreationForm):
@@ -15,7 +14,7 @@ class SignUpForm(UserCreationForm):
     def __init__(self, *args, **kwargs):
         super(SignUpForm, self).__init__(*args, **kwargs)
 
-        for fieldname in ['username', 'email', 'password1', 'password2']:
+        for fieldname in ['username', 'email', 'password1', 'password2',]:
             self.fields[fieldname].help_text = None
 
 

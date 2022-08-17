@@ -1,58 +1,66 @@
-from django.shortcuts import render, redirect,HttpResponse
-from django.contrib.auth.forms import UserCreationForm
-from .forms import SignUpForm, UserUpdateForm, ProfileUpdateForm
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
-from users.serializers import userRegistrationSerialization,UserLoginSerializer,UserProfileSerializer
 from django.contrib.auth import authenticate
-from users.renders import UserRenderer
+
+from .forms import SignUpForm, UserUpdateForm, ProfileUpdateForm
+from .renderers import UserRenderer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
-from django.core.mail import send_mail
-from django.views.decorators.cache import cache_page
-from django.views.decorators.csrf import csrf_protect
-import math, random
+from .serializers import *
+from .email import *
 
-
-import os
 # Create your views here.
-
 def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-
-    return {
-        'refresh': str(refresh),
-        'access': str(refresh.access_token),
-    }
-
-
-
-#api
-
-class UserRegistrationView(APIView):
-    renderer_classes = [UserRenderer]
-    def post(self,request,fromat=None):
-        serializer = userRegistrationSerialization(data=request.data)
+  refresh = RefreshToken.for_user(user)
+  return {
+      'refresh': str(refresh),
+      'access': str(refresh.access_token),
+  }
+class emailsend(APIView):
+    def post(self,request):
+        data = request.data
+        serializer = OTPSend(data=data)
         if serializer.is_valid(raise_exception=True):
-            user = serializer.save()
-            token = get_tokens_for_user(user)
-            return Response({'token':token,'msg':'Registration Success'},status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
+            serializer.save()
+
+
+
+            Util1.send_email(serializer.data.get('email'))
+
+
+
+            return Response(serializer.data,status=status.HTTP_200_OK)
+
+class RegisterApiview(APIView):
+
+    def post(self,request):
+        data = request.data
+        serializer = UserRegistrationSerializer(data=data)
+        if serializer.is_valid(raise_exception=True):
+
+
+            serializer.save()
+
+
+            return Response(serializer.data,status=status.HTTP_200_OK)
 
 class UserLoginView(APIView):
+  renderer_classes = [UserRenderer]
   def post(self, request, format=None):
     serializer = UserLoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     email = serializer.data.get('email')
     password = serializer.data.get('password')
-    user = authenticate(username=email, password=password)
+    user = authenticate(email=email, password=password)
     if user is not None:
       token = get_tokens_for_user(user)
-      return Response({'token':token,'msg':'Login Success'}, status=status.HTTP_200_OK)
+      return Response({'token':token, 'msg':'Login Success'}, status=status.HTTP_200_OK)
     else:
       return Response({'errors':{'non_field_errors':['Email or Password is not Valid']}}, status=status.HTTP_404_NOT_FOUND)
 
@@ -62,6 +70,32 @@ class UserProfileView(APIView):
   def get(self, request, format=None):
     serializer = UserProfileSerializer(request.user)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+class UserChangePasswordView(APIView):
+  renderer_classes = [UserRenderer]
+  permission_classes = [IsAuthenticated]
+  def post(self, request, format=None):
+    serializer = UserChangePasswordSerializer(data=request.data, context={'user':request.user})
+    serializer.is_valid(raise_exception=True)
+    return Response({'msg':'Password Changed Successfully'}, status=status.HTTP_200_OK)
+
+class SendPasswordResetEmailView(APIView):
+  renderer_classes = [UserRenderer]
+  def post(self, request, format=None):
+    serializer = SendPasswordResetEmailSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    return Response({'msg':'Password Reset link send. Please check your Email'}, status=status.HTTP_200_OK)
+
+class UserPasswordResetView(APIView):
+  renderer_classes = [UserRenderer]
+  def post(self, request, uid, token, format=None):
+    serializer = UserPasswordResetSerializer(data=request.data, context={'uid':uid, 'token':token})
+    serializer.is_valid(raise_exception=True)
+    return Response({'msg':'Password Reset Successfully'}, status=status.HTTP_200_OK)
+
+
+
+# views for front end
 
 def sign_up(request):
     if request.method == 'POST':
@@ -74,24 +108,8 @@ def sign_up(request):
     context = {
         'form': form,
     }
-    return render(request, 'users/register_otp.html', context)
+    return render(request, 'users/sign_up.html', context)
 
-
-def generateOTP():
-    digits = "0123456789"
-    OTP = ""
-    for i in range(4):
-        OTP += digits[math.floor(random.random() * 10)]
-    return OTP
-
-
-def send_otp(request):
-    email = request.GET.get("email")
-    print(email)
-    o = generateOTP()
-    htmlgen = '<p>Your OTP is <strong>o</strong></p>'
-    send_mail('OTP request', o, 'fazlerabbi2248@gmail.com', [email], fail_silently=False, html_message=htmlgen)
-    return HttpResponse(o)
 
 @login_required
 def profile(request):
@@ -111,5 +129,3 @@ def profile(request):
         'p_form': p_form,
     }
     return render(request, 'users/profile.html', context)
-
-
